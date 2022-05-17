@@ -3,18 +3,28 @@ library(DT)
 library(ggplot2)
 library(dplyr)
 
-df <- read.csv("./proba_sanger2022.csv")[ ,2:9]
-
+df <- read.csv("data/proba_Deepsynergy (Preuer et al., 2018)_Sanger 2022.csv")[ ,2:9]
 server <- function(input, output,session){
+    
+
+    observeEvent(c(input$model,input$dataset), {
+       file_path = paste0("data/proba_",input$model,"_",input$dataset,".csv")
+        if(file_test("-f", file_path)){
+            df = read.csv(paste0("data/proba_",input$model,"_",input$dataset,".csv"))[ ,2:9]        
+        }else{
+            df <- read.csv("data/proba_Deepsynergy (Preuer et al., 2018)_Sanger 2022.csv")[ ,2:9]
+        }
+        
+    })
     
     data <- df
 
     # Update as soon as Month gets populated according to the year and month selected
     observeEvent(
-        input$d2, {
+        c(input$d1,input$d2), {
             if(input$d1 != "All"){
                 if(input$d2 != "All"){
-                    choices = unique(as.character(data$DepMap_ID[data$Drug1==input$d1 & data$Drug2==input$d2]))
+                    choices = sort(unique(as.character(data$DepMap_ID[data$Drug1==input$d1 & data$Drug2==input$d2])))
                     if (length(choices)>0){
                         updateSelectInput(session, "cell", "Cell line", choices = c('All',choices))
                     }else{
@@ -22,12 +32,18 @@ server <- function(input, output,session){
                     }
                     
                 }else{
-                    chocies =  unique(as.character(data$DepMap_ID[data$Drug1==input$d1]))
+                    chocies =  sort(unique(as.character(data$DepMap_ID[data$Drug1==input$d1])))
                     updateSelectInput(session, "cell", "Cell line", choices = c("All",chocies))    
                     }
 
             }else{
-                updateSelectInput(session, "cell", "Cell line", choices = c('All', unique(as.character(data$DepMap_ID))))
+                if(input$d2 != "All"){
+                    chocies =  sort(unique(as.character(data$DepMap_ID[data$Drug2==input$d2])))
+                    updateSelectInput(session, "cell", "Cell line", choices = c("All",chocies))   
+                }else{
+                    updateSelectInput(session, "cell", "Cell line", choices = c('All', sort(unique(as.character(data$DepMap_ID)))))
+                }
+
             }
             
             
@@ -76,6 +92,17 @@ server <- function(input, output,session){
         
     })
     
+    source("./shap_summary_plot.R", local = TRUE)
+    output$shapImage1 <- renderPlot({
+        shap_summary_plot()$fig1
+        # summary plot
+    })
+    
+    output$shapImage2 <- renderPlot({
+        shap_summary_plot()$fig2
+        # beeswarm plot
+    })
+    
 }
 
 
@@ -85,15 +112,23 @@ ui <- fluidPage(
         sidebarPanel(
             selectInput("d1", "Drug1", choices = c('All', unique(as.character(df$Drug1)))),
             selectInput("d2", "Drug2", choices = c('All', unique(as.character(df$Drug2)))),
-            selectInput("cell", "Cell line", choices = c('All', unique(as.character(df$DepMap_ID))))),
-
+            selectInput("cell", "Cell line", choices = c('All', unique(as.character(df$DepMap_ID)))),
+            radioButtons('model','Prediction model', choices = c('LR','XGBOOST','RF','ERT','Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
+                        'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy (Zhu et al., 2022)'),selected='Deepsynergy (Preuer et al., 2018)'),
+            radioButtons('dataset','Dataset', choices = c('DrugComb v1.5','Sanger 2022'), selected='Sanger 2022')),
+        
         
         mainPanel(
             tabsetPanel(
+                
                 tabPanel("data table",
                          dataTableOutput("table"), plotOutput("heatImage") ),
                 tabPanel("SHAP analysis",
-                         
+                         fluidRow(
+                             column(
+                                 width = 6,plotOutput("shapImage1")),
+                             column(
+                                 width = 6,plotOutput("shapImage2")))
                 )
 
             )
