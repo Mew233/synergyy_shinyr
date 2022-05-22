@@ -6,8 +6,16 @@ library(tidyverse)
 library(ggbeeswarm)
 
 server <- function(input, output,session){
-
-    
+    # save user input of dataset as a global variable
+  dummydf <- reactive( {
+      if(input$dataset == "DrugComb v1.5"){
+        dummydf <- read.csv("data/proba_Deepsynergy (Preuer et al., 2018)_DrugComb v1.5.csv")[ ,-1]
+      } else{
+        dummydf <- read.csv("data/proba_Deepsynergy (Preuer et al., 2018)_Sanger 2022.csv")[ ,-1]
+      }
+    return(dummydf)
+    })
+      
     data <- reactive({
        file_path = paste0("data/proba_",input$model,"_",input$dataset,".csv")
         if(file_test("-f", file_path)){
@@ -26,13 +34,13 @@ server <- function(input, output,session){
     # })
     
     output$columns1 <- renderUI({
-        selectInput("d1", label = "Drug1", choices = c('All',sort(unique(as.character(data()$Drug1)))), selectize=TRUE)
+        selectInput("d1", label = "Drug1", choices = c('All',sort(unique(as.character(dummydf()$Drug1)))), selectize=TRUE)
     })
     output$columns2 <- renderUI({
-        selectInput("d2", label = "Drug2", choices = c('All',sort(unique(as.character(data()$Drug2)))), selectize=TRUE)
+        selectInput("d2", label = "Drug2", choices = c('All',sort(unique(as.character(dummydf()$Drug2)))), selectize=TRUE)
     })
     output$columns3 <- renderUI({
-        selectInput("cell", label = "Cell line", choices = c('All',sort(unique(as.character(data()$DepMap_ID)))), selectize=TRUE)
+        selectInput("cell", label = "Cell line", choices = c('All',sort(unique(as.character(dummydf()$DepMap_ID)))), selectize=TRUE)
     })
     
     #update d2
@@ -79,6 +87,7 @@ server <- function(input, output,session){
 
     
     output$table <- renderDataTable(DT::datatable({
+        
             data <- data()
             a = (input$d1 != "All") 
             b = (input$d2 != "All")
@@ -105,8 +114,6 @@ server <- function(input, output,session){
             # }
             data
         }))
-
-
     
     output$heatImage <- renderPlot({
         data <-  data()
@@ -226,31 +233,6 @@ server <- function(input, output,session){
     })
 
 
-    # 
-    
-    # source("./qq_plot.R", local = TRUE)
-    # output$boxplot1 <- renderPlot({
-    #     data = data()
-    #     a = (input$d1 != "All") 
-    #     b = (input$d2 != "All")
-    #     c = (input$cell != "All")
-    #     if (a & !b & !c){ 
-    #         data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1) }
-    #         qq_plot(input=data)$fig1
-    #     # shouye tu1
-    # })
-    
-    # output$boxplot2 <- renderPlot({
-    #     data = data()
-    #     a = (input$d1 != "All") 
-    #     b = (input$d2 != "All")
-    #     c = (input$cell != "All")
-    #     if (a & !b & !c){ 
-    #         data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1) }
-    #         qq_plot(input=data)$fig2
-    #     # shouye tu2
-    # })
-    # 
     
     source("./shap_summary_plot.R", local = TRUE)
     output$shapImage1 <- renderPlot({
@@ -270,13 +252,13 @@ ui <- fluidPage(
     titlePanel('SynergyY Shiny R'),
     sidebarLayout(
         sidebarPanel(
-            
-            radioButtons('model','Prediction model', choices = c('LR','XGBOOST','RF','ERT','Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
-                        'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy (Zhu et al., 2022)'),selected='Deepsynergy (Preuer et al., 2018)'),
+            radioButtons('dataset','Dataset', choices = c('DrugComb v1.5','Sanger 2022'), selected='DrugComb v1.5'),
             uiOutput('columns1'),
             uiOutput('columns2'),
             uiOutput('columns3'),
-            radioButtons('dataset','Dataset', choices = c('DrugComb v1.5','Sanger 2022'), selected='DrugComb v1.5'),
+            #'LR','XGBOOST','RF','ERT',
+            radioButtons('model','Prediction model', choices = c('Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
+                                                                 'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy from TGSA (Zhu et al., 2022)'),selected='Deepsynergy (Preuer et al., 2018)'),
             # sliderInput(
             #     "synscore", label = "Synergy score:",
             #     min = 0, value = 0, max = 30
@@ -293,13 +275,18 @@ ui <- fluidPage(
                 
                 tabPanel("data table",
                          dataTableOutput("table"), 
-                         fluidRow(
-                             column(
-                                 width = 6,plotOutput("boxplot")),
-                             column(
-                                 width = 6,plotOutput("boxplot2"))
+                         
+                         conditionalPanel(
+                           condition = "input.dataset != 'Sanger 2022'",
+                           fluidRow(
+                               column(
+                                   width = 6,plotOutput("boxplot")),
+                               column(
+                                   width = 6,plotOutput("boxplot2"))
 
-                             ),
+                               )
+                         ),
+                         
                          plotOutput("heatImage") 
                          ),
                 

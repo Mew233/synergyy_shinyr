@@ -5,14 +5,27 @@ library(ggbeeswarm)
 # library(ggdist)
 
 
-shap = as_tibble(read.csv("data/deep.csv"))
-shap_exp = as_tibble(read.csv("data/deep_exp.csv"))
-
 shap_summary_plot = function() {
+  
+  shap = as_tibble(read.csv("data/deep.csv"))
+  shap_exp = as_tibble(read.csv("data/deep_exp.csv"))
+  
+  # filter by input drug1/drug2
+  shap1 <- reactive( {
+    temp = shap %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
+    return(temp)
+  })
+  
+  shap_exp1 <- reactive( {
+    #temp = shap_exp %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
+    #这里exp也需要像exp一样merge
+    temp = shap_exp %>% filter(row_number() %in% rownames(shap1()))
+    return(temp)
+  })
   
   #summary bar plot
   
-  pairs_exp = shap %>% select(c(2:1001)) 
+  pairs_exp = shap1() %>% select(c(2:1001)) 
   means = pairs_exp %>% abs() %>% colMeans() 
   
   df <- data.frame(x = names(means), y = means) %>% arrange(-y)
@@ -28,7 +41,7 @@ shap_summary_plot = function() {
   pairs_exp_long = pairs_exp_selected %>%
     pivot_longer(colnames(.),names_to =  "genes", values_to = "value")
   
-  exp_selected = shap_exp[,df_new$x]
+  exp_selected = shap_exp1()[,df_new$x]
   zscore =  as.data.frame(scale(exp_selected))
   zscore_long = zscore %>%
     pivot_longer(colnames(.),names_to =  "genes", values_to = "value")
