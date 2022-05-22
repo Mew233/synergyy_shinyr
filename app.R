@@ -2,6 +2,8 @@ library(shiny)
 library(DT)
 library(ggplot2)
 library(dplyr)
+library(tidyverse)
+library(ggbeeswarm)
 
 server <- function(input, output,session){
 
@@ -105,6 +107,7 @@ server <- function(input, output,session){
         }))
 
 
+    
     output$heatImage <- renderPlot({
         data <-  data()
         # Create auxiliary data.frame.
@@ -146,6 +149,109 @@ server <- function(input, output,session){
         
     })
     
+    
+    
+    output$boxplot <- renderPlot({
+        data <- data()
+        
+        plot1 <- function(df, title){
+            data = data %>% filter(Loewe.score >= -60 & Loewe.score <= 40)
+            
+            coolwarm_hcl <- colorspace::diverging_hcl(7, h = c(250, 10), c = 100, l = c(35, 95), power = c(0.7,1.3))
+            p = ggplot(data, aes(y =Proba, x = Loewe.score,color=Proba))
+            p + guides(fill=guide_legend(title="Actual Loewe score",label=FALSE)) +
+                scale_colour_gradient2(limits=c(0, 1),midpoint = 0.5)  +
+                geom_point() + 
+                #scale_color_gradientn(colours = coolwarm_hcl, limits=c(-50, 50),midpoint = 3)  +
+                # geom_point(aes(size = (Proba*10)^2)) +
+                # scale_size(name   = "predicted proba",
+                #            breaks = fivenum(data$Proba*10)^2,
+                #            labels = c("","","","","")) +
+                xlim(-60, 40) + ylim(0, 1) + xlab('Actual score') +ylab('Predicted Proba') + labs(title=title) + 
+                geom_vline(xintercept=0) + geom_hline(yintercept=0.5)
+        }
+        
+        a = (input$d1 != "All")
+        b = (input$d2 != "All")
+        c = (input$cell != "All")
+        if (!a & !b & c){ data <- data %>% filter(DepMap_ID == input$cell) 
+            plot1(data, title=input$cell)}
+        else if (a & !b & !c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1) 
+            plot1(data, title=paste0("Selected drug: ",input$d1))}
+        else if (!a & b & !c){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2) 
+            plot1(data, title=paste0("Selected drug: ",input$d2))}
+        else if (!a & b & c){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell) 
+            plot1(data, title=paste0("Selected combo: ", input$d2, " ",input$cell))}
+        else if (a & !b & c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell) 
+            plot1(data, title=paste0("Selected combo: ", input$d1, " ",input$cell))}
+        else if (a & b & !c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
+            plot1(data, title=paste0("Selected combo: ", input$d1, " ",input$d2))}
+        else if (a & b & c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) %>% filter(DepMap_ID == input$cell)
+            plot1(data, title=paste0("Selected combo: ", input$d1, " ",input$d2, " ",input$cell))}
+
+    })
+    
+    output$boxplot2 <- renderPlot({
+        data <- data()
+        
+        plot1 <- function(df, title=""){
+        quantiles = seq(0, 1, 0.01)
+        ggplot(mapping = aes(x = quantile(data$Loewe.score, quantiles), y = quantile(data$Proba, quantiles))) + 
+            geom_point(size = 0.5) + 
+            xlab('Actual score quantile') +ylab('Predicted proba quantile') + labs(title=paste0("Emperical qq plot: ",title)) +
+            #geom_abline(aes(slope = 1, intercept = 0), linetype = 2) +
+            xlim(-60, 40) + ylim(0, 1)
+        
+}
+        
+        a = (input$d1 != "All")
+        b = (input$d2 != "All")
+        c = (input$cell != "All")
+        if (!a & !b & c){ data <- data %>% filter(DepMap_ID == input$cell) 
+        plot1(data)}
+        else if (a & !b & !c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1) 
+        plot1(data)}
+        else if (!a & b & !c){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2) 
+        plot1(data)}
+        else if (!a & b & c){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell) 
+        plot1(data)}
+        else if (a & !b & c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell) 
+        plot1(data)}
+        else if (a & b & !c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
+        plot1(data)}
+        else if (a & b & c){ data <- data %>% filter(DepMap_ID == input$cell)
+        plot1(data, title=input$cell)}
+        
+        
+    })
+
+
+    # 
+    
+    # source("./qq_plot.R", local = TRUE)
+    # output$boxplot1 <- renderPlot({
+    #     data = data()
+    #     a = (input$d1 != "All") 
+    #     b = (input$d2 != "All")
+    #     c = (input$cell != "All")
+    #     if (a & !b & !c){ 
+    #         data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1) }
+    #         qq_plot(input=data)$fig1
+    #     # shouye tu1
+    # })
+    
+    # output$boxplot2 <- renderPlot({
+    #     data = data()
+    #     a = (input$d1 != "All") 
+    #     b = (input$d2 != "All")
+    #     c = (input$cell != "All")
+    #     if (a & !b & !c){ 
+    #         data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1) }
+    #         qq_plot(input=data)$fig2
+    #     # shouye tu2
+    # })
+    # 
+    
     source("./shap_summary_plot.R", local = TRUE)
     output$shapImage1 <- renderPlot({
         shap_summary_plot()$fig1
@@ -164,20 +270,39 @@ ui <- fluidPage(
     titlePanel('SynergyY Shiny R'),
     sidebarLayout(
         sidebarPanel(
-    
+            
             radioButtons('model','Prediction model', choices = c('LR','XGBOOST','RF','ERT','Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
                         'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy (Zhu et al., 2022)'),selected='Deepsynergy (Preuer et al., 2018)'),
             uiOutput('columns1'),
             uiOutput('columns2'),
             uiOutput('columns3'),
             radioButtons('dataset','Dataset', choices = c('DrugComb v1.5','Sanger 2022'), selected='DrugComb v1.5'),
+            # sliderInput(
+            #     "synscore", label = "Synergy score:",
+            #     min = 0, value = 0, max = 30
+            # ),
+            # sliderInput(
+            #     "proba", label = "Predicted proba:",
+            #     min = 0, value = 0.5, max = 1
+            # ),
             ),
         
+
         mainPanel(
             tabsetPanel(
                 
                 tabPanel("data table",
-                         dataTableOutput("table"), plotOutput("heatImage") ),
+                         dataTableOutput("table"), 
+                         fluidRow(
+                             column(
+                                 width = 6,plotOutput("boxplot")),
+                             column(
+                                 width = 6,plotOutput("boxplot2"))
+
+                             ),
+                         plotOutput("heatImage") 
+                         ),
+                
                 tabPanel("SHAP analysis",
                          fluidRow(
                              column(
