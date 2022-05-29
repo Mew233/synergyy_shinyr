@@ -4,6 +4,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(ggbeeswarm)
+library(grid)
 
 server <- function(input, output,session){
     # save user input of dataset as a global variable
@@ -162,13 +163,18 @@ server <- function(input, output,session){
         data <- data()
         
         plot1 <- function(df, title){
-            data = data %>% filter(Loewe.score >= -60 & Loewe.score <= 40)
+            data = df %>% filter(Loewe.score >= -60 & Loewe.score <= 40)
+            
+            attach(data)
+            grob1 = grobTree(textGrob(paste("Pearson Correlation : ", round(cor(Proba, Loewe.score), 4) ), 
+                                      x = 0.03, y = 0.97, hjust = 0, gp = gpar(col = "red", fontsize = 11, fontface = "bold")))
+            
             
             coolwarm_hcl <- colorspace::diverging_hcl(7, h = c(250, 10), c = 100, l = c(35, 95), power = c(0.7,1.3))
             p = ggplot(data, aes(y =Proba, x = Loewe.score,color=Proba))
             p + guides(fill=guide_legend(title="Actual Loewe score",label=FALSE)) +
                 scale_colour_gradient2(limits=c(0, 1),midpoint = 0.5)  +
-                geom_point() + 
+                geom_point() + annotation_custom(grob1) +
                 #scale_color_gradientn(colours = coolwarm_hcl, limits=c(-50, 50),midpoint = 3)  +
                 # geom_point(aes(size = (Proba*10)^2)) +
                 # scale_size(name   = "predicted proba",
@@ -200,14 +206,27 @@ server <- function(input, output,session){
     
     output$boxplot2 <- renderPlot({
         data <- data()
+
         
         plot1 <- function(df, title=""){
+        data = df %>% filter(Loewe.score >= -60 & Loewe.score <= 40)
+        
+        attach(data)
+        z_loewe = scale(data$Loewe.score)
+        z_proba = scale(data$Proba)
+  
+        #lambda = round(median(z_proba^2, na.rm = TRUE) /  median(z_loewe^2, na.rm = TRUE) , 4)
+        "λ = "
+        ks = ks.test(z_loewe, z_proba) 
+        grob1 = grobTree(textGrob(paste("D = ", round(ks$statistic,4), ", p = ", round(ks$p.value,4)), 
+                                  x = 0.03, y = 0.97, hjust = 0, gp = gpar(col = "red", fontsize = 11, fontface = "bold")))
+        
         quantiles = seq(0, 1, 0.01)
         ggplot(mapping = aes(x = quantile(data$Loewe.score, quantiles), y = quantile(data$Proba, quantiles))) + 
             geom_point(size = 0.5) + 
             xlab('Actual score quantile') +ylab('Predicted proba quantile') + labs(title=paste0("Emperical qq plot: ",title)) +
             #geom_abline(aes(slope = 1, intercept = 0), linetype = 2) +
-            xlim(-60, 40) + ylim(0, 1)
+            xlim(-60, 40) + ylim(0, 1) + annotation_custom(grob1) + geom_abline(intercept = 0.5, slope = 0.5/40, linetype = "dashed", size = 0.25)
         
 }
         
