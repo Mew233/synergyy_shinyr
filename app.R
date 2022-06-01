@@ -328,11 +328,15 @@ ui <- fluidPage(
                                  width = 6,plotOutput("shapImage2"))),
                          
                          fluidRow(h5('Top 30 features (from all features)',style="display:inline-block")),
+                         
+                         conditionalPanel(
+                           condition = "input.d2 != 'All'",
                          fluidRow(
                            column(
                              width = 6,plotOutput("shapImage3")),
                            column(
-                             width = 6,plotOutput("shapImage4"))),
+                             width = 6,plotOutput("shapImage4")))
+                         ),
 
                 )
 

@@ -16,10 +16,16 @@ shap_summary_plot = function() {
   
   # filter by input drug1/drug2
   shap1 <- reactive( {
-    if(input$d2 != "All"){
-    temp = shap %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)}
-    else{
-    temp = shap %>% filter(Drug1 == input$d1 | Drug2 == input$d1)
+    if(input$model == "Multitaskdnn (Kim et al., 2021)"){
+      if(input$d2 != "All"){
+        if(input$cell == "All"){
+          temp = shap %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)}
+        else{
+          temp = shap %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) %>% filter(DepMap_ID == input$cell)
+      }}
+      else{
+      temp = shap %>% filter(Drug1 == input$d1 | Drug2 == input$d1)
+      }
     }
     return(temp)
   })
@@ -33,7 +39,7 @@ shap_summary_plot = function() {
   
   #summary bar plot
   withProgress(message = 'Making plot', value=0,{
-
+    
   pairs_exp = shap1() %>% select(c(6178:(6178+1000-1)))
   #pairs_exp = shap1() %>% select(c(2:6177)) 
   means = pairs_exp %>% abs() %>% colMeans() 
@@ -42,7 +48,7 @@ shap_summary_plot = function() {
   
   #aes(reorder(x, y)
   fig1 = df %>% slice(1:30) %>% ggplot(., aes(y = fct_reorder(x, y), y)) + geom_bar(stat="identity",fill = "#C0C0C0") + xlab('mean(|Shap value|)(average impact on model output magnitude)') +ylab('Genes')
-  
+  incProgress(1/4)
   
   #beeswarm plot
   ## df_new contains top 30 selected genes
@@ -67,7 +73,7 @@ shap_summary_plot = function() {
           + scale_color_gradientn(colours = coolwarm_hcl) 
           + guides(fill=guide_legend(title="exp value",label=FALSE)) 
           + geom_beeswarm(cex = 3) + xlab('Shap value(impact on model output)') +ylab('Genes'))
- 
+  incProgress(1/4)
   
   # 全局
   pairs_exp = shap1() %>% select(c(2:(6178+1000-1))) 
@@ -77,7 +83,7 @@ shap_summary_plot = function() {
   
   #aes(reorder(x, y)
   fig3 = df %>% slice(1:30) %>% ggplot(., aes(y = fct_reorder(x, y), y)) + geom_bar(stat="identity",fill = "#C0C0C0") + xlab('mean(|Shap value|)(average impact on model output magnitude)') +ylab('Features')
-  
+  incProgress(1/4)
   
   #全局 beeswarm plot
   ## df_new contains top 30 selected genes
@@ -102,7 +108,9 @@ shap_summary_plot = function() {
           + scale_color_gradientn(colours = coolwarm_hcl) 
           #+ guides(fill=guide_legend(title="feature value",label=FALSE)) 
           + geom_beeswarm(cex = 3) + xlab('Shap value(impact on model output)') +ylab('Features'))
+  incProgress(1/4)
   
+    
   })
   
   returns = list(fig1=NULL, fig2=NULL,fig3=NULL, fig4=NULL)
