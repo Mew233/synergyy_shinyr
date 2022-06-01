@@ -30,7 +30,7 @@ server <- function(input, output,session){
     #https://cloud.tencent.com/developer/article/1830442
     # data <- reactive({
     #     #req(input$file1)
-    #     df <- read.csv(paste0("data/proba_",input$model,"_",input$dataset,".csv"))[ ,-1]
+    #     df <- fread(paste0("data/proba_",input$model,"_",input$dataset,".csv"))[ ,-1]
     #     return(df)
     # })
     
@@ -264,6 +264,16 @@ server <- function(input, output,session){
         # beeswarm plot
     })
     
+    output$shapImage3 <- renderPlot({
+      shap_summary_plot()$fig3
+      # whole summary plot
+    })
+    
+    output$shapImage4 <- renderPlot({
+      shap_summary_plot()$fig4
+      # whole beeswarm plot
+    })
+    
 }
 
 
@@ -277,7 +287,7 @@ ui <- fluidPage(
             uiOutput('columns3'),
             #'LR','XGBOOST','RF','ERT',
             radioButtons('model','Prediction model', choices = c('Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
-                                                                 'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy from TGSA (Zhu et al., 2022)'),selected='Deepsynergy (Preuer et al., 2018)'),
+                                                                 'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy from TGSA (Zhu et al., 2022)'),selected='Multitaskdnn (Kim et al., 2021)'),
             # sliderInput(
             #     "synscore", label = "Synergy score:",
             #     min = 0, value = 0, max = 30
@@ -310,11 +320,20 @@ ui <- fluidPage(
                          ),
                 
                 tabPanel("SHAP analysis",
+                         fluidRow(h5('Top 30 gene expression features',style="display:inline-block")),
                          fluidRow(
                              column(
                                  width = 6,plotOutput("shapImage1")),
                              column(
-                                 width = 6,plotOutput("shapImage2")))
+                                 width = 6,plotOutput("shapImage2"))),
+                         
+                         fluidRow(h5('Top 30 features (from all features)',style="display:inline-block")),
+                         fluidRow(
+                           column(
+                             width = 6,plotOutput("shapImage3")),
+                           column(
+                             width = 6,plotOutput("shapImage4"))),
+
                 )
 
             )
