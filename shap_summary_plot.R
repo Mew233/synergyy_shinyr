@@ -33,7 +33,8 @@ shap_summary_plot = function() {
   shap_exp1 <- reactive( {
     #temp = shap_exp %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
     #这里exp也需要像exp一样merge
-    temp = shap_exp %>% filter(row_number() %in% rownames(shap1()))
+    #temp = shap_exp %>% filter(row_number() %in% rownames(shap1()))
+    temp = shap_exp %>% filter(V1 %in% shap1()$V1)
     return(temp)
   })
   
