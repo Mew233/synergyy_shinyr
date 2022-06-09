@@ -5,8 +5,8 @@ account: mew233
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6314995
-bundleId: 5969076
+bundleId: 5972825
 url: https://mew233.shinyapps.io/synergyy_shinyr/
-when: 1654114285.78443
+when: 1654203102.02518
 asMultiple: FALSE
 asStatic: FALSE
