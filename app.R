@@ -238,7 +238,7 @@ ui <- fluidPage(
             # radioButtons('model','Prediction model', choices = c('Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
             #                                                      'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy from TGSA (Zhu et al., 2022)'),selected='Multitaskdnn (Kim et al., 2021)'),
 
-              checkboxGroupInput("checkbox", "Prediction model",
+              checkboxGroupInput("checkbox", "Prediction models",
                                  choices = c('Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
                                              'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy from TGSA (Zhu et al., 2022)'))
  
@@ -251,6 +251,7 @@ ui <- fluidPage(
                 tabPanel("data table",
                          dataTableOutput("table"), 
                          conditionalPanel(
+                           #condition =  "input.cell != 'All'",
                            condition = "input.dataset != 'Sanger 2022'",
                            fluidRow(
                                column(

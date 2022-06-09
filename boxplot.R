@@ -4,7 +4,7 @@ box_plot = function(df) {
       data = df %>% filter(Loewe.score >= -60 & Loewe.score <= 40)
       
       #attach(data)
-      grob1 = grobTree(textGrob(paste("Pearson Correlation : ", round(cor(Proba, Loewe.score), 4) ), 
+      grob1 = grobTree(textGrob(paste("Pearson Correlation : ", round(cor(data$Proba, data$Loewe.score), 4) ), 
                                 x = 0.03, y = 0.97, hjust = 0, gp = gpar(col = "red", fontsize = 11, fontface = "bold")))
       
       
