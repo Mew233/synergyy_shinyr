@@ -1,7 +1,7 @@
 box_plot = function(df) {
   
     plot1 <- function(df, title){
-      data = df %>% filter(Loewe.score >= -60 & Loewe.score <= 40)
+      data = df %>% filter(Loewe.score >= -50 & Loewe.score <= 50)
       
       #attach(data)
       grob1 = grobTree(textGrob(paste("Pearson Correlation : ", round(cor(data$Proba, data$Loewe.score), 4) ), 
@@ -18,12 +18,12 @@ box_plot = function(df) {
         # scale_size(name   = "predicted proba",
         #            breaks = fivenum(data$Proba*10)^2,
         #            labels = c("","","","","")) +
-        xlim(-60, 40) + ylim(0, 1) + xlab('Actual score') +ylab('Predicted Proba') + labs(title=title) + 
+        xlim(-50, 50) + ylim(0, 1) + xlab('Actual score') +ylab('Predicted Proba') + labs(title=title) + 
         geom_vline(xintercept=0) + geom_hline(yintercept=0.5)
     }
     
     plot2 <- function(df, title=""){
-      data = df %>% filter(Loewe.score >= -60 & Loewe.score <= 40)
+      data = df %>% filter(Loewe.score >= -50 & Loewe.score <= 50)
       
       #attach(data)
       z_loewe = scale(data$Loewe.score)
@@ -40,7 +40,7 @@ box_plot = function(df) {
         geom_point(size = 0.5) + 
         xlab('Actual score quantile') +ylab('Predicted proba quantile') + labs(title=paste0("Emperical qq plot: ",title)) +
         #geom_abline(aes(slope = 1, intercept = 0), linetype = 2) +
-        xlim(-60, 40) + ylim(0, 1) + annotation_custom(grob1) + geom_abline(intercept = 0.5, slope = 0.5/40, linetype = "dashed", size = 0.25)
+        xlim(-50, 50) + ylim(0, 1) + annotation_custom(grob1) + geom_abline(intercept = 0.5, slope = 0.5/40, linetype = "dashed", size = 0.25)
       
     }
     
@@ -49,6 +49,7 @@ box_plot = function(df) {
     a = (input$d1 != "All")
     b = (input$d2 != "All")
     c = (input$cell != "All")
+    d = (input$tissue != "All")
     returns = list(fig1=NULL, fig2=NULL)
     
     if (!a & !b & c){ data <- data %>% filter(DepMap_ID == input$cell)
@@ -56,31 +57,43 @@ box_plot = function(df) {
     fig2 =plot2(data)
     returns$fig1 = fig1
     returns$fig2 = fig2}
-    else if (a & !b & !c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)
+    else if (a & b & !c & d){ data1 <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) %>% filter(Tissue == input$tissue)
+    fig1 = plot1(data1, title=paste0("Selected combo: ",input$d1,  " ", input$d2, "  tested in ",input$tissue))
+    data2 = data %>% filter(Tissue == input$tissue)
+    fig2 =plot2(data2, title=paste0("Selected tissue: ",input$tissue))
+    returns$fig1 = fig1
+    returns$fig2 = fig2
+    }
+    else if (a & !b & !c & !d){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)
     fig1 = plot1(data, title=paste0("Selected drug: ",input$d1))
     fig2 =plot2(data)
     returns$fig1 = fig1
     returns$fig2 = fig2}
-    else if (!a & b & !c){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
+    else if (!a & b & !c & !d){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
     fig1 = plot1(data, title=paste0("Selected drug: ",input$d2))
     fig2 =plot2(data)
     returns$fig1 = fig1
     returns$fig2 = fig2}
-    else if (!a & b & c){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell)
+    else if (!a & b & c & !d){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell)
     fig1 = plot1(data, title=paste0("Selected combo: ", input$d2, " ",input$cell))
     fig2 =plot2(data)
     returns$fig1 = fig1
     returns$fig2 = fig2}
-    else if (a & !b & c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell)
+    else if (a & !b & c & !d){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell)
     fig1 = plot1(data, title=paste0("Selected combo: ", input$d1, " ",input$cell))
     fig2 =plot2(data)
     returns$fig1 = fig1
     returns$fig2 = fig2}
-    else if (a & b & !c){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
+    else if (a & b & !c & !d){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
     fig1 = plot1(data, title=paste0("Selected combo: ", input$d1, " ",input$d2))
     fig2 =plot2(data)
     returns$fig1 = fig1
     returns$fig2 = fig2}
+    else if (!a & !b & d){ data <- data %>% filter(Tissue == input$tissue)
+    fig1 = plot1(data, title=paste0("Selected tissue: ", input$tissue))
+    fig2 =plot2(data)
+    returns$fig1 = fig1
+    returns$fig2 = fig2 }
     else if (a & b & c){ 
     data1 <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) %>% filter(DepMap_ID == input$cell)
     fig1 = plot1(data1, title=paste0("Selected combo: ", input$d1, " ",input$d2, " ",input$cell))
@@ -88,6 +101,19 @@ box_plot = function(df) {
     fig2 =plot2(data2)
     returns$fig1 = fig1
     returns$fig2 = fig2}
+    else if (!a & b & !c & d){ data <- data %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , Tissue == input$tissue) 
+    fig1 = plot1(data, title=paste0("Selected drug: ", input$d2, " tested in ",input$tissue))
+    fig2 =plot2(data)
+    returns$fig1 = fig1
+    returns$fig2 = fig2 
+    }
+    else if (a & !b & !c & d){ data <- data %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , Tissue == input$tissue) 
+    fig1 = plot1(data, title=paste0("Selected drug: ", input$d1, " tested in ",input$tissue))
+    fig2 =plot2(data)
+    returns$fig1 = fig1
+    returns$fig2 = fig2 
+    }
+    
 
     
     return(returns)

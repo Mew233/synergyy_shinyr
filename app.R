@@ -43,6 +43,9 @@ server <- function(input, output,session){
     output$columns3 <- renderUI({
         selectInput("cell", label = "Cell line", choices = c('All',sort(unique(as.character(dummydf()$DepMap_ID)))), selectize=TRUE)
     })
+    output$columns4 <- renderUI({
+      selectInput("tissue", label = "Tissue", choices = c('All',sort(unique(as.character(dummydf()$DepMap_ID)))), selectize=TRUE)
+    })
     
     #update d2
     observeEvent(input$d1, {
@@ -63,28 +66,75 @@ server <- function(input, output,session){
                     #choices = sort(unique(as.character(data()$DepMap_ID[data()$Drug1==input$d1 & data()$Drug2==input$d2])))
                     temp = dummydf() %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
                     choices = sort(unique(as.character(temp$DepMap_ID)))
+                    # choices_ts = sort(unique(as.character(temp$Tissue)))
                     if (length(choices)>0){
                         updateSelectInput(session, "cell", "Cell line", choices = c('All',choices))
+                        # updateSelectInput(session, "tissue", "Tissues", choices = c('All',choices_ts))
                     }else{
                         updateSelectInput(session, "cell", "Cell line", choices = "")
+                        # updateSelectInput(session, "tissue", "Tissues", choices = "")
                     }
 
                 }else{
                     chocies =  sort(unique(as.character(dummydf()$DepMap_ID[dummydf()$Drug1==input$d1])))
                     updateSelectInput(session, "cell", "Cell line", choices = c("All",chocies))
+                    #ts
+                    # chocies_ts=  sort(unique(as.character(dummydf()$Tissue[dummydf()$Drug1==input$d1])))
+                    # updateSelectInput(session, "tissue", "Tissues", choices = c("All",chocies_ts))
+                    
                     }
 
             }else{
                 if(input$d2 != "All"){
                     chocies =  sort(unique(as.character(dummydf()$DepMap_ID[dummydf()$Drug2==input$d2])))
                     updateSelectInput(session, "cell", "Cell line", choices = c("All",chocies))
+                    #ts
+                    # chocies_ts =  sort(unique(as.character(dummydf()$Tissue[dummydf()$Drug2==input$d2])))
+                    # updateSelectInput(session, "tissue", "Tissues", choices = c("All",chocies_ts))
                 }else{
                     updateSelectInput(session, "cell", "Cell line", choices = c('All', sort(unique(as.character(dummydf()$DepMap_ID)))))
+                    # updateSelectInput(session, "tissue", "Tissues", choices = c('All', sort(unique(as.character(dummydf()$Tissue)))))
                 }
 
             }
 
         })
+    
+    #update tissue
+    observeEvent(
+      c(input$d1,input$d2,input$cell),  {
+        if(input$cell != "All"){
+          updateSelectInput(session, "tissue", "Tissues", choices = "")
+        }
+        else{
+          if(input$d1 != "All"){
+            if(input$d2 != "All"){
+              temp = dummydf() %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2)
+              choices_ts = sort(unique(as.character(temp$Tissue)))
+              if (length(choices_ts)>0){
+                updateSelectInput(session, "tissue", "Tissues", choices = c('All',choices_ts))
+              }else{
+                updateSelectInput(session, "tissue", "Tissues", choices = "")
+              }
+              
+            }else{
+              chocies_ts=  sort(unique(as.character(dummydf()$Tissue[dummydf()$Drug1==input$d1])))
+              updateSelectInput(session, "tissue", "Tissues", choices = c("All",chocies_ts))
+              
+            }
+            
+          }else{
+            if(input$d2 != "All"){
+              chocies_ts =  sort(unique(as.character(dummydf()$Tissue[dummydf()$Drug2==input$d2])))
+              updateSelectInput(session, "tissue", "Tissues", choices = c("All",chocies_ts))
+            }else{
+              updateSelectInput(session, "tissue", "Tissues", choices = c('All', sort(unique(as.character(dummydf()$Tissue)))))
+            }
+            
+          }
+        }
+      }
+      )
 
     # =============================table
     source("./read_df.R", local = TRUE)
@@ -107,15 +157,27 @@ server <- function(input, output,session){
             a = (input$d1 != "All")
             b = (input$d2 != "All")
             c = (input$cell != "All")
+            d = (input$tissue != "All")
+            
             if (a & b & c){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) %>% filter(DepMap_ID == input$cell) }
+            if (a & b & !c & d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) %>% filter(Tissue == input$tissue) }
+            
             if (!a & !b & c){ data <- dummy %>% filter(DepMap_ID == input$cell) }
-            if (a & !b & !c){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1) }
-            if (!a & b & !c){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2) }
-            if (!a & b & c){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell) }
-            if (a & !b & c){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell) }
-            if (a & b & !c){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) }
-            if (!a & !b & !c){data<- dummy}
+            if (a & !b & !c & !d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1) }
+            if (!a & b & !c & !d){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2) }
+            if (!a & b & c & !d){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell) }
+            if (a & !b & c & !d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell) }
+            if (a & b & !c & !d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) }
+            if (!a & !b & !c & !d){data<- dummy}
 
+            if (!a & !b & d){ data <- dummy %>% filter(Tissue == input$tissue) }
+
+            if (!a & b & !c & d){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , Tissue == input$tissue) }
+            if (a & !b & !c & d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , Tissue == input$tissue) }
+
+            
+            
+            
             data
         })
         
@@ -233,7 +295,15 @@ ui <- fluidPage(
             radioButtons('dataset','Dataset', choices = c('DrugComb v1.5','Sanger 2022'), selected='DrugComb v1.5'),
             uiOutput('columns1'),
             uiOutput('columns2'),
-            uiOutput('columns3'),
+            fluidRow(
+              column(
+                width = 6,uiOutput('columns3')),
+              column(
+                width = 6,uiOutput('columns4')),
+              
+            ),
+            # uiOutput('columns3'),
+            # uiOutput('columns4'),
             #'LR','XGBOOST','RF','ERT',
             # radioButtons('model','Prediction model', choices = c('Deepsynergy (Preuer et al., 2018)','Multitaskdnn (Kim et al., 2021)',
             #                                                      'Matchmaker (Brahim et al., 2021)','Deepdds (Wang et al., 2021)','TGSynergy from TGSA (Zhu et al., 2022)'),selected='Multitaskdnn (Kim et al., 2021)'),
