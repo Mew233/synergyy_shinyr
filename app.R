@@ -10,7 +10,8 @@ server <- function(input, output,session){
     # save user input of dataset as a global variable
   dummydf <- reactive( {
       if(input$dataset == "DrugComb v1.5"){
-        dummydf <- read.csv("data/proba_Deepsynergy (Preuer et al., 2018)_DrugComb v1.5.csv")[ ,-1]
+        #dummydf <- read.csv("data/proba_Deepsynergy (Preuer et al., 2018)_DrugComb v1.5.csv")[ ,-1]
+        dummydf <- read.csv("data/proba_Deepdds (Wang et al., 2021)_DrugComb v1.5_processed.csv")[ ,-1]
       } else{
         dummydf <- read.csv("data/proba_Deepsynergy (Preuer et al., 2018)_Sanger 2022.csv")[ ,-1]
       }
@@ -137,7 +138,9 @@ server <- function(input, output,session){
       )
 
     # =============================table
+    
     source("./read_df.R", local = TRUE)
+    source("./data/preprocess.R", local = TRUE)
     observe({
     output$table <- renderDataTable(DT::datatable({
      
@@ -165,8 +168,8 @@ server <- function(input, output,session){
             if (!a & !b & c){ data <- dummy %>% filter(DepMap_ID == input$cell) }
             if (a & !b & !c & !d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1) }
             if (!a & b & !c & !d){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2) }
-            if (!a & b & c & !d){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell) }
-            if (a & !b & c & !d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell) }
+            if (!a & b & c & !d){ data <- dummy %>% filter(Drug1 == input$d2 | Drug2 == input$d2 , DepMap_ID == input$cell)}
+            if (a & !b & c & !d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , DepMap_ID == input$cell)}
             if (a & b & !c & !d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1)  %>% filter(Drug1 == input$d2 | Drug2 == input$d2) }
             if (!a & !b & !c & !d){data<- dummy}
 
@@ -176,8 +179,7 @@ server <- function(input, output,session){
             if (a & !b & !c & d){ data <- dummy %>% filter(Drug1 == input$d1 | Drug2 == input$d1 , Tissue == input$tissue) }
 
             
-            
-            
+          
             data
         })
         

@@ -4,6 +4,7 @@ heatImage = function(data) {
   if (input$cell == "All") {
   }else{
     data <- data[data$DepMap_ID == input$cell,]
+
     data$Var1 = factor(data$Drug1)
     data$Var2 = factor(data$Drug2)
     
